@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
+    <title>WebRTC Speed Race</title>
+  </head>
+  <body>
+    <button onclick="testSocket()">start socket test</button>
+    <button onclick="testRTC()">start WebRTC test</button>
+  </body>
+  <script>
+    var socket = io();
+    var socketPkg = [];
+    var rtcPkg = [];
+    let peer = new Peer({ host: "localhost", port: 7648, path: "/peer" });
+    let conn = peer.connect("server");
+    let printTimeout;
+    let startTime;
+    conn.serialization = "none";
+    conn.on("open", () => {
+      conn.send({ message: "hi!" });
+      conn.send({ a: 2 });
+    });
+    conn.on("data", data => {
+      // console.log("rtc", data);
+      // if (typeof data === '') {
+      // console.log(data);
+      // } else {
+      // console.log(data);
+      rtcPkg.push(data);
+      clearTimeout(printTimeout);
+      printTimeout = setTimeout(() => {
+        console.log(
+          `#packages: ${rtcPkg.length}, elapsed Time: ${Date.now() -
+            100 -
+            startTime}`
+        );
+      }, 100);
+      // }
+    });
+    socket.on("msg", data => {
+      socketPkg.push(data);
+    });
+    socket.on("cnt", cnt => {
+      console.log(
+        `#packages: ${socketPkg.length}, elapsed Time: ${Date.now() -
+          startTime}`
+      );
+    });
+    function testSocket() {
+      startTime = Date.now();
+      socketPkg = [];
+      socket.emit("test", 1);
+    }
+    function testRTC() {
+      startTime = Date.now();
+      rtcPkg = [];
+      conn.send("test");
+      printTimeout = setTimeout(() => {
+        console.log(rtcPkg.length);
+      }, 100);
+    }
+  </script>
+</html>
