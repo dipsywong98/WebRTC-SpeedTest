@@ -4,5 +4,6 @@ module.exports = class FileReader {
   }
   readAsArrayBuffer(fakeBlob) {
     // console.log(fakeBlob);
+    return fakeBlob;
   }
 };

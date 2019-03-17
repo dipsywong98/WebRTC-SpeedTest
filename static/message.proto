@@ -1,0 +1,6 @@
+// package rtc;
+syntax = "proto3";
+
+message Message {
+  string content = 1;
+}

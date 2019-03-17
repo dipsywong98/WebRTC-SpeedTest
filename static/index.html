@@ -3,6 +3,7 @@
   <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
+    <script src="https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.6/dist/protobuf.js"></script>
     <title>WebRTC Speed Race</title>
   </head>
   <body>
@@ -25,6 +26,22 @@
     } else if (window.location.href == "http://localhost:7648/") {
       peer = new Peer({ host: "localhost", port: 7648, path: "/peer" });
     }
+
+    protobuf.load("./message.proto", (err, root) => {
+      if (!!err) {
+        console.log(err);
+        return;
+      }
+      var Message = root.lookupType("Message");
+      var message = Message.create({ content: "hello world" });
+      var buffer = Message.encode(message).finish();
+      console.log(buffer, buffer.length);
+      console.log(Message.decode(buffer).content);
+      BufferFactory = content =>
+        Message.encode(Message.create({ content })).finish();
+      Decoder = buff => Message.decode(buff);
+    });
+
     let conn = peer.connect("server");
     let printTimeout;
     let startTime;
@@ -34,7 +51,11 @@
       conn.send({ message: "hi!" });
       conn.send({ a: 2 });
     });
+
     conn.on("data", data => {
+      data = new Uint8Array(data);
+      data = Decoder(data);
+      console.log(data);
       rtcPkg.push(data);
       clearTimeout(printTimeout);
       printTimeout = setTimeout(() => {
@@ -44,8 +65,8 @@
             startTime}`
         );
       }, 100);
-      // }
     });
+
     socket.on("msg", data => {
       socketPkg.push(data);
       if (socketPkg.length % 1000 == 0) {
@@ -55,24 +76,24 @@
         );
       }
     });
+
     socket.on("cnt", cnt => {
       console.log(
         `#packages: ${socketPkg.length}, elapsed Time: ${Date.now() -
           startTime}`
       );
     });
+
     function testSocket() {
       startTime = Date.now();
       socketPkg = [];
       socket.emit("test", 1);
     }
+
     function testRTC() {
       startTime = Date.now();
       rtcPkg = [];
       conn.send("test");
-      printTimeout = setTimeout(() => {
-        console.log(rtcPkg.length);
-      }, 100);
     }
 
     function check(array) {
