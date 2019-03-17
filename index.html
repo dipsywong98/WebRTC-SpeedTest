@@ -8,26 +8,33 @@
   <body>
     <button onclick="testSocket()">start socket test</button>
     <button onclick="testRTC()">start WebRTC test</button>
+    <button onclick="check(socketPkg)">check socket</button>
+    <button onclick="check(rtcPkg)">check RTC</button>
   </body>
   <script>
     var socket = io();
     var socketPkg = [];
     var rtcPkg = [];
-    let peer = new Peer({ host: "localhost", port: 7648, path: "/peer" });
+    if (window.location.href == "https://webrtc-test.hkustracing.com/") {
+      peer = new Peer({
+        host: "webrtc-test.hkustracing.com",
+        port: 443,
+        path: "/peer",
+        secure: true
+      });
+    } else if (window.location.href == "http://localhost:7648/") {
+      peer = new Peer({ host: "localhost", port: 7648, path: "/peer" });
+    }
     let conn = peer.connect("server");
     let printTimeout;
     let startTime;
     conn.serialization = "none";
     conn.on("open", () => {
+      console.log("open RTC");
       conn.send({ message: "hi!" });
       conn.send({ a: 2 });
     });
     conn.on("data", data => {
-      // console.log("rtc", data);
-      // if (typeof data === '') {
-      // console.log(data);
-      // } else {
-      // console.log(data);
       rtcPkg.push(data);
       clearTimeout(printTimeout);
       printTimeout = setTimeout(() => {
@@ -41,6 +48,12 @@
     });
     socket.on("msg", data => {
       socketPkg.push(data);
+      if (socketPkg.length % 1000 == 0) {
+        console.log(
+          `#packages: ${socketPkg.length}, elapsed Time: ${Date.now() -
+            startTime}`
+        );
+      }
     });
     socket.on("cnt", cnt => {
       console.log(
@@ -60,6 +73,26 @@
       printTimeout = setTimeout(() => {
         console.log(rtcPkg.length);
       }, 100);
+    }
+
+    function check(array) {
+      let ids = array.map(s => Number(s.match(/\d+/)[0]));
+      console.log(
+        "inversions: ",
+        ids.reduce(
+          ({ prev, total }, curr) => {
+            if (curr < prev) {
+              total++;
+            }
+            prev = curr;
+            return {
+              prev,
+              total
+            };
+          },
+          { prev: -1, total: 0 }
+        ).total
+      );
     }
   </script>
 </html>

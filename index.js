@@ -19,7 +19,7 @@ const PORT = 7648;
 function makeid(length) {
   var text = "";
   var possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()";
 
   for (var i = 0; i < length; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -69,19 +69,12 @@ io.on("connection", function(socket) {
   });
 });
 
-app.use("/peer", ExpressPeerServer(http));
+app.use("/peer", ExpressPeerServer(http,{debug:true}));
 
 let peer = peerjs("server", { host: "localhost", port: PORT, path: "/peer" });
 peer.on("connection", conn => {
   conn.serialization = "none";
   conn.on("data", data => {
-    // console.log(data);
-    // console.log(ab2str(data));
-    // conn.send(data);
-    // conn.send(data);
-    // conn.send(123);
-    // console.log(str2ab("4567"));
-    // conn.send(str2ab("4567"));
     if (data === "test") {
       let cnt = 0;
       let start = now("milli");
@@ -91,7 +84,6 @@ peer.on("connection", conn => {
         if (now("milli") - start > 1000) break;
       }
       console.log(`delivered ${cnt} messages`);
-      // conn.send({ cnt });
     }
   });
 });
